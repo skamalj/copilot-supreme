@@ -26,49 +26,99 @@
         }
       ]
     },
-    "configuration": {
-      "type": "object",
-      "title": "OpenAI Settings",
-      "properties": {
-        "openai.apiKey": {
-          "type": "string",
-          "default": "",
-          "description": "Your OpenAI API Key"
-        },
-        "openai.modelName": {
-          "type": "string",
-          "default": "text-davinci-003",
-          "description": "The OpenAI model name to use (e.g., text-davinci-003)"
-        },
-        "openai.temperature": {
-          "type": "string",
-          "default": "0",
-          "description": "Your OpenAI API Key"
+    "configuration": [
+      {
+        "type": "object",
+        "title": "Common",
+        "properties": {
+          "genai.assistant.provider": {
+            "type": "string",
+            "default": "openai",
+            "enum": [
+              "openai",
+              "aws",
+              "azure",
+              "gcp"
+            ],
+            "description": "Select the AI provider you want to use."
+          },
+          "genai.assistant.apiKey": {
+            "type": "string",
+            "default": "",
+            "description": "Your API Key - Used by OpenAI, GCP, Azure"
+          },
+          "genai.assistant.modelName": {
+            "type": "string",
+            "default": "text-davinci-003",
+            "description": "The LLM  model name, available for selected provider,  to use (e.g., text-davinci-003)"
+          },
+          "genai.assistant.temperature": {
+            "type": "string",
+            "default": "0",
+            "description": "LLM temperature"
+          }
+        }
+      },
+      {
+        "type": "object",
+        "title": "OpenAI",
+        "properties": {
+          "genai.assistant.openai.apiKey": {
+            "type": "string",
+            "default": "",
+            "description": "Your API Key"
+          }
+        }
+      },
+      {
+        "type": "object",
+        "title": "Azure",
+        "properties": {
+          "genai.assistant.azure.deployment": {
+            "type": "string",
+            "description": "Azure OpenAI Deployment Name."
+          },
+          "genai.assistant.azure.endpoint": {
+            "type": "string",
+            "description": "Azure OpenAI endpoint"
+          },
+          "genai.assistant.azure.version": {
+            "type": "string",
+            "default":"2023-03-15-preview",
+            "description": "Azure OpenAI endpoint"
+          },
+          "genai.assistant.azure.apiKey": {
+            "type": "string",
+            "default": "",
+            "description": "Your API Key"
+          }
         }
       }
+      ]
+    },
+    "scripts": {
+      "vscode:prepublish": "npm run compile",
+      "compile": "tsc -p ./",
+      "watch": "tsc -watch -p ./",
+      "pretest": "npm run compile && npm run lint",
+      "lint": "eslint src",
+      "test": "vscode-test"
+    },
+    "devDependencies": {
+      "@types/mocha": "^10.0.8",
+      "@types/node": "20.x",
+      "@types/vscode": "^1.93.0",
+      "@typescript-eslint/eslint-plugin": "^8.7.0",
+      "@typescript-eslint/parser": "^8.7.0",
+      "@vscode/test-cli": "^0.0.10",
+      "@vscode/test-electron": "^2.4.1",
+      "eslint": "^9.11.1",
+      "typescript": "^5.6.2"
+    },
+    "dependencies": {
+      "@langchain/core": "^0.3.6",
+      "@langchain/openai": "^0.3.4",
+      "axios": "^1.7.7",
+      "openai": "^4.65.0"
     }
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src",
-    "test": "vscode-test"
-  },
-  "devDependencies": {
-    "@types/mocha": "^10.0.8",
-    "@types/node": "20.x",
-    "@types/vscode": "^1.93.0",
-    "@typescript-eslint/eslint-plugin": "^8.7.0",
-    "@typescript-eslint/parser": "^8.7.0",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1",
-    "eslint": "^9.11.1",
-    "typescript": "^5.6.2"
-  },
-  "dependencies": {
-    "axios": "^1.7.7",
-    "openai": "^4.65.0"
   }
-}

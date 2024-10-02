@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { OpenAI } from 'openai';
+import { getModelHandle } from './modelProvider.js';
 
 // Set to track enabled files
 const enabledFiles = new Set<string>();
@@ -13,7 +13,7 @@ export function activate(context: vscode.ExtensionContext) {
 
             if (!enabledFiles.has(filePath)) {
                 // Retrieve API key and model name from the settings
-                const config = vscode.workspace.getConfiguration('openai');
+                const config = vscode.workspace.getConfiguration('genai.assistant');
                 const apiKey = config.get<string>('apiKey');
                 const modelName = config.get<string>('modelName', 'text-davinci-003');
 
@@ -70,9 +70,9 @@ export function activate(context: vscode.ExtensionContext) {
         if (changedLineText.trim().startsWith('// @!') && change.text.includes('\n')) {
             const question = changedLineText.trim().substring(4).trim();
             await fetchCompletion(document, document.getText(), question, change.range.start);
-        } 
+        }
         // Multi-line comment closed
-        else if (changedLineText.trim().endsWith('*/') && !change.text.includes('\n') ) {
+        else if (changedLineText.trim().endsWith('*/') && !change.text.includes('\n')) {
             const multiLineStartLine = change.range.start.line - 1; // Previous line where multi-line comment started
             const question = extractQuestionFromMultiLine(document, multiLineStartLine, change.range.start.line);
             if (question) {
@@ -99,36 +99,35 @@ function extractQuestionFromMultiLine(document: vscode.TextDocument, startLine: 
 }
 
 async function fetchCompletion(document: vscode.TextDocument, contextText: string, question: string, position: vscode.Position) {
-    // Retrieve API key and model name from settings
-    const config = vscode.workspace.getConfiguration('openai');
-    const apiKey = config.get<string>('apiKey');
-    const modelName = config.get<string>('modelName', 'text-davinci-003');
-	const modelTemperature = Number( config.get<string>('temperature', '0.5'));
-
-    if (!apiKey) {
-        vscode.window.showErrorMessage('OpenAI API Key is missing. Please set it in the VSCode settings.');
-        return;
-    }
 
     try {
-        const openai = new OpenAI({ apiKey });
 
-        // Make the OpenAI API call
-        const response = await openai.chat.completions.create({
-            model: modelName,
-            messages: [
-                { role: "system", content: `You are a coding assistant to developers. 
-					Identify programming language from file extension.
-					Utilize current code for completion context. 
-					User's next question is provided as 'Question'. 
-					Return only executable code without any COMMENTS.`},
-                { role: "user", content: `FileName: ${vscode.workspace.asRelativePath(document.uri)}\nCurrent-Code: ${contextText}\nQuestion: ${question}` }
-            ],
-            max_tokens: 150,
-            temperature: modelTemperature,
-        });
+        const model = getModelHandle();
 
-        const completionText = response.choices[0]?.message?.content?.trim() || '';
+        const messages = [
+            {
+                "role": "system",
+                "content": `You are a coding assistant for developers. You are provided with the following inputs:
+                              1. Filename - Name of the file being edited, used to identify the programming language.
+                              2. Current Code - The code immediately preceding this request for context.
+                              3. Question - The question or help requested by the user related to the current code.
+                            Your task is to:
+                              - Detect the programming language from the file extension.
+                              - ONLY generate executable code in response.
+                              - DO NOT include any comments, explanations, or non-executable text.
+                              - If the requested code can be directly inferred from the question, generate the relevant code only.`
+            },
+            {
+                "role": "user",
+                "content": `FileName: ${vscode.workspace.asRelativePath(document.uri)}
+                                        Current-Code: ${contextText}
+                                        Question: ${question}`
+            }
+        ];
+
+        const response = await model.invoke(messages);
+
+        const completionText = response.content || '';
         if (completionText) {
             const edit = new vscode.WorkspaceEdit();
             edit.insert(document.uri, position.translate(1, 0), `\n${completionText}`);
@@ -139,4 +138,4 @@ async function fetchCompletion(document: vscode.TextDocument, contextText: strin
     }
 }
 
-export function deactivate() {}
+export function deactivate() { }
