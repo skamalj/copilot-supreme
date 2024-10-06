@@ -12,11 +12,11 @@ This VSCode extension provides AI-assisted code suggestions based on user commen
 
 ## Supported AI Providers
 
-This extension supports multiple AI providers:
+This extension supports multiple AI providers, configure settings to specify defaults models and authentication:
 - OpenAI
-- AWS
+- AWS (Bedrock)
 - Azure
-- Google
+- Google GenAI (Vertex not supported yet)
 - Anthropic
 
 ## Usage
