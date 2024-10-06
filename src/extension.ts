@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
 import { getModelHandle } from './modelProvider.js';
-import { identifyProgrammingLanguage } from './utils.js';
+import { getCommentPatterns, identifyProgrammingLanguage, collectConsecutiveComments, extractProviderAndModel, extractQuestionFromMultiLine, findStartOfMultiLineComment } from './utils.js';
 
 // Global LLM model instance
 let llmModel;
+const contexts = new Map(); // To store context for each document
 
 export function activate(context: vscode.ExtensionContext) {
-    let enableCommand = vscode.commands.registerCommand('extension.enableOpenAISuggestions', async () => {
+    let enableCommand = vscode.commands.registerCommand('extension.activateLLMCompletion', async () => {
         const editor = vscode.window.activeTextEditor;
         if (editor) {
             const languageId = identifyProgrammingLanguage(editor);
@@ -15,7 +16,12 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showErrorMessage(`Unsupported programming language: ${editor.document.languageId}`);
                 return;
             }
+            const patterns = getCommentPatterns(languageId);
             llmModel = getModelHandle();
+            // Set the context for the current document
+            contexts.set(editor.document.uri.toString(), {
+                patterns: patterns
+            });
         }
     });
 
@@ -26,25 +32,52 @@ export function activate(context: vscode.ExtensionContext) {
         const document = event.document;
         const changes = event.contentChanges;
 
-        if (changes.length === 0) {return;}
+        const contextData = contexts.get(document.uri.toString());
+        if (!contextData) {
+            return; // No context available for the current document
+        }
+        const patterns = contextData.patterns;
+
+        if (changes.length === 0) { return; }
 
         const change = changes[0];
         const changedLineText = document.lineAt(change.range.start.line).text.trim();
 
         // Handle single-line comment
-        if (changedLineText.startsWith('// @!') && change.text.includes('\n')) {
-            const question = changedLineText.substring(4).trim();
-            await fetchCompletion(document, document.getText(), question, change.range.start);
+        if (changedLineText.startsWith(patterns.singleLine + ' @!') && change.text.includes('\n')) {
+            const question = await collectConsecutiveComments(document, change.range.start.line, patterns.singleLine);
+            const { provider, modelName } = extractProviderAndModel(question);
+            const cleanedQuestion = question
+                .replace(/provider=([^\s]+)/, '')
+                .replace(/model=([^\s]+)/, '')
+                .trim();
+
+            let modelHandle;
+            if (provider || modelName) {
+                modelHandle = getModelHandle(provider, modelName);
+            }
+            if (question) {
+                await fetchCompletion(document, document.getText(), cleanedQuestion, change.range.start, modelHandle);
+            }
         }
         // Check for multi-line comment closure
-        else if (changedLineText === '*/') {
-            const startLine = await findStartOfMultiLineComment(document, change.range.start.line);
+        else if (changedLineText.includes(patterns.multiLineTrigger) && change.text.includes('\n')) {
+            const startLine = await findStartOfMultiLineComment(document, change.range.start.line, patterns.multiLineStart, patterns.multiLineEnd);
             if (startLine !== -1) {
-                // Only fetch completion if the comment starts with /* @!            
-                if (document.lineAt(startLine).text.includes('/* @!')) {
-                    const question = extractQuestionFromMultiLine(document, startLine, change.range.start.line);
-                    if (question) {
-                        await fetchCompletion(document, document.getText(), question, change.range.start);
+                const question = extractQuestionFromMultiLine(document, startLine, change.range.start.line, patterns.multiLineStart, patterns.multiLineEnd);
+                if (question) {
+                    const { provider, modelName } = extractProviderAndModel(question);
+                    const cleanedQuestion = question
+                        .replace(/provider=([^\s]+)/, '')
+                        .replace(/model=([^\s]+)/, '')
+                        .trim();
+
+                    let modelHandle;
+                    if (provider || modelName) {
+                        modelHandle = getModelHandle(provider, modelName);
+                    }
+                    if (cleanedQuestion) {
+                        await fetchCompletion(document, document.getText(), cleanedQuestion, change.range.start, modelHandle);
                     }
                 }
             }
@@ -52,41 +85,9 @@ export function activate(context: vscode.ExtensionContext) {
     });
 }
 
-async function findStartOfMultiLineComment(document: vscode.TextDocument, endLine: number): Promise<number> {
-    // Scan backwards to find the start of the multi-line comment
-    for (let line = endLine; line >= 0; line--) {
-        const lineText = document.lineAt(line).text.trim();
-        if (lineText.endsWith('/*') || lineText.endsWith('/* @!')) {
-            return line; // Return the line number where the comment starts
-        }
-        if (lineText.includes('*/')) {
-            break; // Exit if we reach a closing comment without finding the opening
-        }
-    }
-    return -1; // Not found
-}
-
-function extractQuestionFromMultiLine(document: vscode.TextDocument, startLine: number, endLine: number): string | null {
-    let question = '';
-
-    // Iterate over the lines of the multi-line comment
-    for (let line = startLine; line <= endLine; line++) {
-        const lineText = document.lineAt(line).text;
-        if (line === startLine) {
-            // Start capturing after '@!' or '/*'
-            const index = lineText.indexOf('@!');
-            question += index !== -1 ? lineText.substring(index + 2).trim() : lineText.trim();
-        } else {
-            question += lineText.trim() + ' '; // Append subsequent lines
-        }
-    }
-
-    return question ? question.trim() : null; // Return the full question
-}
-
-async function fetchCompletion(document: vscode.TextDocument, contextText: string, question: string, position: vscode.Position) {
+async function fetchCompletion(document: vscode.TextDocument, contextText: string, question: string, position: vscode.Position, localModel?: any) {
+    const config = vscode.workspace.getConfiguration('genai.assistant');
     try {
-        const model = getModelHandle();
         const messages = [
             {
                 "role": "system",
@@ -97,7 +98,8 @@ async function fetchCompletion(document: vscode.TextDocument, contextText: strin
                             Your task is to:
                               - Detect the programming language from the file extension.
                               - ONLY generate executable code in response.
-                              - DO NOT include any comments, explanations, or non-executable text.
+                              - Code must not be commented out
+                              - Must NOT include any comments, explanations, or non-executable text.
                               - If the requested code can be directly inferred from the question, generate the relevant code only.`
             },
             {
@@ -108,7 +110,9 @@ async function fetchCompletion(document: vscode.TextDocument, contextText: strin
             }
         ];
 
-        const response = await model.invoke(messages);
+        const modelToUse = localModel || llmModel;
+        vscode.window.showInformationMessage(`Model Object: ${JSON.stringify(modelToUse, null, 2)}`);
+        const response = await modelToUse.invoke(messages);
         const completionText = response.content || '';
 
         if (completionText) {

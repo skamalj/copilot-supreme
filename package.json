@@ -1,8 +1,10 @@
 {
-  "name": "openai-code-ext",
-  "displayName": "openai-code-ext",
+  "name": "genai-code-assist",
+  "displayName": "GenAI Code Assistant",
   "description": "VSCode extendsion for openai coding assistant",
   "version": "0.0.1",
+  "publisher": "skamalj",
+  "icon": "images/icon.jpg",
   "engines": {
     "vscode": "^1.93.0"
   },
@@ -14,14 +16,14 @@
   "contributes": {
     "commands": [
       {
-        "command": "extension.enableOpenAISuggestions",
-        "title": "Enable OpenAI Suggestions for Current File"
+        "command": "extension.activateLLMCompletion",
+        "title": "GenAI Assist: Activate"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "extension.enableOpenAISuggestions",
+          "command": "extension.activateLLMCompletion",
           "when": "editorTextFocus"
         }
       ]
@@ -38,7 +40,8 @@
               "openai",
               "aws",
               "azure",
-              "gcp"
+              "google",
+              "anthropic"
             ],
             "description": "Select the AI provider you want to use."
           },
@@ -79,7 +82,7 @@
           },
           "genai.assistant.azure.version": {
             "type": "string",
-            "default":"2023-03-15-preview",
+            "default": "2023-03-15-preview",
             "description": "Azure OpenAI endpoint"
           },
           "genai.assistant.azure.apiKey": {
@@ -93,32 +96,93 @@
             "description": "The LLM  model name (e.g., gpt-35-turbo)"
           }
         }
+      },
+      {
+        "type": "object",
+        "title": "AWS",
+        "properties": {
+          "genai.assistant.aws.profile": {
+            "type": "string",
+            "default": "",
+            "description": "AWS environment profile to use for connection"
+          },
+          "genai.assistant.aws.region": {
+            "type": "string",
+            "default": "",
+            "description": "AWS region to use for Bedrock"
+          },
+          "genai.assistant.aws.modelName": {
+            "type": "string",
+            "default": "gpt-3.5-turbo",
+            "description": "The LLM  model name (e.g., gpt-3.5-turbo)"
+          }
+        }
+      },
+      {
+        "type": "object",
+        "title": "Google",
+        "properties": {
+          "genai.assistant.google.apiKey": {
+            "type": "string",
+            "default": "",
+            "description": "Google AIStudio Key"
+          },
+          "genai.assistant.google.modelName": {
+            "type": "string",
+            "default": "gemini-1.5-flash-latest",
+            "description": "The LLM  model name (e.g., gemini-1.5-flash-latest)"
+          }
+        }
+      },
+      {
+        "type": "object",
+        "title": "Anthropic",
+        "properties": {
+          "genai.assistant.anthropic.apiKey": {
+            "type": "string",
+            "default": "",
+            "description": "Your API Key"
+          },
+          "genai.assistant.anthropic.modelName": {
+            "type": "string",
+            "default": "claude-3-5-sonnet-20240620",
+            "description": "The LLM  model name (e.g., claude-3-5-sonnet-20240620)"
+          }
+        }
       }
-      ]
-    },
-    "scripts": {
-      "vscode:prepublish": "npm run compile",
-      "compile": "tsc -p ./",
-      "watch": "tsc -watch -p ./",
-      "pretest": "npm run compile && npm run lint",
-      "lint": "eslint src",
-      "test": "vscode-test"
-    },
-    "devDependencies": {
-      "@types/mocha": "^10.0.8",
-      "@types/node": "20.x",
-      "@types/vscode": "^1.93.0",
-      "@typescript-eslint/eslint-plugin": "^8.7.0",
-      "@typescript-eslint/parser": "^8.7.0",
-      "@vscode/test-cli": "^0.0.10",
-      "@vscode/test-electron": "^2.4.1",
-      "eslint": "^9.11.1",
-      "typescript": "^5.6.2"
-    },
-    "dependencies": {
-      "@langchain/core": "^0.3.6",
-      "@langchain/openai": "^0.3.4",
-      "axios": "^1.7.7",
-      "openai": "^4.65.0"
-    }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.8",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.93.0",
+    "@typescript-eslint/eslint-plugin": "^8.7.0",
+    "@typescript-eslint/parser": "^8.7.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.11.1",
+    "typescript": "^5.6.2"
+  },
+  "dependencies": {
+    "@aws-crypto/sha256-js": "^5.2.0",
+    "@aws-sdk/types": "^3.664.0",
+    "@langchain/anthropic": "^0.3.3",
+    "@langchain/aws": "^0.1.0",
+    "@langchain/community": "^0.3.4",
+    "@langchain/core": "^0.3.7",
+    "@langchain/google-genai": "^0.1.0",
+    "@langchain/openai": "^0.3.5",
+    "@smithy/eventstream-codec": "^2.2.0",
+    "@smithy/protocol-http": "^3.3.0",
+    "@smithy/signature-v4": "^2.3.0",
+    "@smithy/util-utf8": "^2.3.0"
   }
+}

@@ -30,10 +30,9 @@ const modelProvider_js_1 = require("./modelProvider.js");
 const utils_js_1 = require("./utils.js");
 // Global LLM model instance
 let llmModel;
-let multiLineCommentBuffer = ''; // Buffer for multi-line comments
+const contexts = new Map(); // To store context for each document
 function activate(context) {
-    // Command to enable OpenAI suggestions for the current file
-    let enableCommand = vscode.commands.registerCommand('extension.enableOpenAISuggestions', async () => {
+    let enableCommand = vscode.commands.registerCommand('extension.activateLLMCompletion', async () => {
         const editor = vscode.window.activeTextEditor;
         if (editor) {
             const languageId = (0, utils_js_1.identifyProgrammingLanguage)(editor);
@@ -41,7 +40,12 @@ function activate(context) {
                 vscode.window.showErrorMessage(`Unsupported programming language: ${editor.document.languageId}`);
                 return;
             }
+            const patterns = (0, utils_js_1.getCommentPatterns)(languageId);
             llmModel = (0, modelProvider_js_1.getModelHandle)();
+            // Set the context for the current document
+            contexts.set(editor.document.uri.toString(), {
+                patterns: patterns
+            });
         }
     });
     context.subscriptions.push(enableCommand);
@@ -49,33 +53,57 @@ function activate(context) {
     vscode.workspace.onDidChangeTextDocument(async (event) => {
         const document = event.document;
         const changes = event.contentChanges;
-        if (changes.length === 0)
+        const contextData = contexts.get(document.uri.toString());
+        if (!contextData) {
+            return; // No context available for the current document
+        }
+        const patterns = contextData.patterns;
+        if (changes.length === 0) {
             return;
+        }
         const change = changes[0];
         const changedLineText = document.lineAt(change.range.start.line).text.trim();
         // Handle single-line comment
-        if (changedLineText.startsWith('// @!') && change.text.includes('\n')) {
-            const question = changedLineText.substring(4).trim();
-            await fetchCompletion(document, document.getText(), question, change.range.start);
+        if (changedLineText.startsWith(patterns.singleLine + ' @!') && change.text.includes('\n')) {
+            const question = await (0, utils_js_1.collectConsecutiveComments)(document, change.range.start.line, patterns.singleLine);
+            const { provider, modelName } = (0, utils_js_1.extractProviderAndModel)(question);
+            const cleanedQuestion = question
+                .replace(/provider=([^\s]+)/, '')
+                .replace(/model=([^\s]+)/, '')
+                .trim();
+            let modelHandle;
+            if (provider || modelName) {
+                modelHandle = (0, modelProvider_js_1.getModelHandle)(provider, modelName);
+            }
+            if (question) {
+                await fetchCompletion(document, document.getText(), cleanedQuestion, change.range.start, modelHandle);
+            }
         }
-        // Handle multi-line comment
-        else if (changedLineText.startsWith('/* @!')) {
-            // Start buffering multi-line comment
-            multiLineCommentBuffer = changedLineText.substring(changedLineText.indexOf('@!') + 2).trim();
-        }
-        else if (multiLineCommentBuffer) {
-            // Keep buffering if multi-line comment is still open
-            multiLineCommentBuffer += ' ' + changedLineText;
-            // If the multi-line comment is closed, process the buffered content
-            if (changedLineText.endsWith('*/')) {
-                const question = multiLineCommentBuffer.trim();
-                multiLineCommentBuffer = ''; // Reset buffer
-                await fetchCompletion(document, document.getText(), question, change.range.start);
+        // Check for multi-line comment closure
+        else if (changedLineText.includes(patterns.multiLineTrigger) && change.text.includes('\n')) {
+            const startLine = await (0, utils_js_1.findStartOfMultiLineComment)(document, change.range.start.line, patterns.multiLineStart, patterns.multiLineEnd);
+            if (startLine !== -1) {
+                const question = (0, utils_js_1.extractQuestionFromMultiLine)(document, startLine, change.range.start.line, patterns.multiLineStart, patterns.multiLineEnd);
+                if (question) {
+                    const { provider, modelName } = (0, utils_js_1.extractProviderAndModel)(question);
+                    const cleanedQuestion = question
+                        .replace(/provider=([^\s]+)/, '')
+                        .replace(/model=([^\s]+)/, '')
+                        .trim();
+                    let modelHandle;
+                    if (provider || modelName) {
+                        modelHandle = (0, modelProvider_js_1.getModelHandle)(provider, modelName);
+                    }
+                    if (cleanedQuestion) {
+                        await fetchCompletion(document, document.getText(), cleanedQuestion, change.range.start, modelHandle);
+                    }
+                }
             }
         }
     });
 }
-async function fetchCompletion(document, contextText, question, position) {
+async function fetchCompletion(document, contextText, question, position, localModel) {
+    const config = vscode.workspace.getConfiguration('genai.assistant');
     try {
         const messages = [
             {
@@ -87,7 +115,8 @@ async function fetchCompletion(document, contextText, question, position) {
                             Your task is to:
                               - Detect the programming language from the file extension.
                               - ONLY generate executable code in response.
-                              - DO NOT include any comments, explanations, or non-executable text.
+                              - Code must not be commented out
+                              - Must NOT include any comments, explanations, or non-executable text.
                               - If the requested code can be directly inferred from the question, generate the relevant code only.`
             },
             {
@@ -97,7 +126,9 @@ async function fetchCompletion(document, contextText, question, position) {
                             Question: ${question}`
             }
         ];
-        const response = await llmModel.invoke(messages);
+        const modelToUse = localModel || llmModel;
+        vscode.window.showInformationMessage(`Model Object: ${JSON.stringify(modelToUse, null, 2)}`);
+        const response = await modelToUse.invoke(messages);
         const completionText = response.content || '';
         if (completionText) {
             const edit = new vscode.WorkspaceEdit();
