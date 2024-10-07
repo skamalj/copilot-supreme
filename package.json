@@ -2,7 +2,7 @@
   "name": "genai-code-assist",
   "displayName": "GenAI Code Assistant",
   "description": "VSCode extendsion for openai coding assistant",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "skamalj",
   "icon": "images/icon.jpg",
   "repository": "https://github.com/skamalj/genai-code-assist.git",

@@ -6,6 +6,7 @@ yarn.lock
 # ---> TypeScript Compiler Output
 dist/
 *.tsbuildinfo
+*.vsix
 
 # ---> IDE - Visual Studio Code
 .vscode/
