@@ -5,6 +5,7 @@
   "version": "0.0.1",
   "publisher": "skamalj",
   "icon": "images/icon.jpg",
+  "repository": "https://github.com/skamalj/genai-code-assist.git",
   "engines": {
     "vscode": "^1.93.0"
   },
