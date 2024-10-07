@@ -2,6 +2,10 @@
 
 This VSCode extension provides AI-assisted code suggestions based on user comments in supported programming languages.
 
+Two reasons why this is created:-
+- This provides you pay-as-you-go option, rather than monthly payments for various copilots. Basis the usage one or the other option will turn out cheaper.
+- You have flexibility to use any chat model from any provider - supports 5 providers as of today.
+
 ## Features
 
 - **Language Support:** Currently supports JavaScript, TypeScript, Python, and Java.
@@ -44,9 +48,3 @@ This extension supports multiple AI providers, configure settings to specify def
      ```
      // @! Your question provider=yourProvider model=yourModel
      ```
-
-## Setup
-
-- Install dependencies using npm:
-  ```bash
-  npm install
