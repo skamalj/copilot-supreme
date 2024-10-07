@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getModelHandle } from './modelProvider.js';
-import { getCommentPatterns, identifyProgrammingLanguage, collectConsecutiveComments, extractProviderAndModel, extractQuestionFromMultiLine, findStartOfMultiLineComment } from './utils.js';
+import { processIncludedFiles, getCommentPatterns, identifyProgrammingLanguage, collectConsecutiveComments, extractProviderAndModel, extractQuestionFromMultiLine, findStartOfMultiLineComment } from './utils.js';
 
 // Global LLM model instance
 let llmModel;
@@ -87,31 +87,36 @@ export function activate(context: vscode.ExtensionContext) {
 
 async function fetchCompletion(document: vscode.TextDocument, contextText: string, question: string, position: vscode.Position, localModel?: any) {
     const config = vscode.workspace.getConfiguration('genai.assistant');
+
     try {
+        // Use the new function to process included files and get the cleaned question
+        const { includedFilesContent, cleanedQuestion } = await processIncludedFiles(question);
+
         const messages = [
             {
                 "role": "system",
                 "content": `You are a coding assistant for developers. You are provided with the following inputs:
                               1. Filename - Name of the file being edited, used to identify the programming language.
-                              2. Current Code - The code immediately preceding this request for context.
-                              3. Question - The question or help requested by the user related to the current code.
+                              2. Included Files - Content from other files specified by the user for additional information. These files provide additional context or code dependencies that you should consider while generating the response. 
+                              3. Current Code - The code immediately preceding this request for context.
+                              4. Question - The question or help requested by the user related to the current code.
                             Your task is to:
                               - Detect the programming language from the file extension.
-                              - ONLY generate executable code in response.
-                              - Code must not be commented out
+                              - Please provide only the necessary code needed to address the user's request.
+                              - Code must not be commented out.
                               - Must NOT include any comments, explanations, or non-executable text.
                               - If the requested code can be directly inferred from the question, generate the relevant code only.`
             },
             {
                 "role": "user",
                 "content": `FileName: ${vscode.workspace.asRelativePath(document.uri)}
+                            ${includedFilesContent ? `Included Files Content:\n${includedFilesContent}\n` : ''}
                             Current-Code: ${contextText}
-                            Question: ${question}`
+                            Question: ${cleanedQuestion}`
             }
         ];
 
         const modelToUse = localModel || llmModel;
-        vscode.window.showInformationMessage(`Model Object: ${JSON.stringify(modelToUse, null, 2)}`);
         const response = await modelToUse.invoke(messages);
         const completionText = response.content || '';
 

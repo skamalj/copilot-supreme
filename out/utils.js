@@ -30,6 +30,8 @@ exports.collectConsecutiveComments = collectConsecutiveComments;
 exports.extractProviderAndModel = extractProviderAndModel;
 exports.extractQuestionFromMultiLine = extractQuestionFromMultiLine;
 exports.findStartOfMultiLineComment = findStartOfMultiLineComment;
+exports.processIncludedFiles = processIncludedFiles;
+exports.getFileContent = getFileContent;
 const vscode = __importStar(require("vscode"));
 /**
  * Function to identify if the current file's language is supported.
@@ -153,5 +155,55 @@ async function findStartOfMultiLineComment(document, endLine, multiLineStart, mu
         }
     }
     return -1; // Not found
+}
+/**
+ * Function to process the `include-<file>` directives in the question and fetch their content.
+ * @param {string} question - The user's question containing the `include-<file>` directives.
+ * @returns {Promise<{includedFilesContent: string, cleanedQuestion: string}>} - An object containing concatenated included file contents and the cleaned question.
+ */
+async function processIncludedFiles(question) {
+    const includeFileMatches = [...question.matchAll(/include=([^\s]+)/g)];
+    let includedFilesContent = '';
+    let cleanedQuestion = question;
+    // If there are include patterns, fetch each file's content
+    if (includeFileMatches.length > 0) {
+        for (const match of includeFileMatches) {
+            const fileName = match[1].trim();
+            const fileContent = await getFileContent(fileName);
+            if (!fileContent) {
+                vscode.window.showErrorMessage(`File ${fileName} could not be found or is empty.`);
+                continue; // Skip to the next file if there's an error
+            }
+            // Append file content under a "Filename" heading
+            includedFilesContent += `\nFilename: ${fileName}\n${fileContent}\n`;
+            // Remove the include directive from the question text
+            cleanedQuestion = cleanedQuestion.replace(match[0], '').trim();
+        }
+    }
+    return { includedFilesContent, cleanedQuestion };
+}
+/**
+ * Function to read the content of a file within the workspace.
+ * @param {string} fileName - The file name to be read.
+ * @returns {Promise<string | null>} - Returns the content of the file or null if not found.
+ */
+async function getFileContent(fileName) {
+    try {
+        const workspaceFolder = vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri : null;
+        if (!workspaceFolder) {
+            vscode.window.showErrorMessage('No workspace folder found.');
+            return null;
+        }
+        // Create a URI for the file to be included
+        const fileUri = vscode.Uri.joinPath(workspaceFolder, fileName);
+        // Check if the file exists
+        const fileData = await vscode.workspace.fs.readFile(fileUri);
+        const fileContent = Buffer.from(fileData).toString('utf-8');
+        return fileContent;
+    }
+    catch (error) {
+        vscode.window.showErrorMessage(`Error reading file ${fileName}: ${error.message}`);
+        return null;
+    }
 }
 //# sourceMappingURL=utils.js.map
