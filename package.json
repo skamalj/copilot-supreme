@@ -1,8 +1,8 @@
 {
-  "name": "genai-code-assist",
-  "displayName": "GenAI Code Assistant",
-  "description": "VSCode extendsion for openai coding assistant",
-  "version": "0.0.2",
+  "name": "copilot-supreme",
+  "displayName": "Copilot Supreme",
+  "description": "Multi model GenAI based coding assistant",
+  "version": "0.0.1",
   "publisher": "skamalj",
   "icon": "images/icon.jpg",
   "repository": "https://github.com/skamalj/genai-code-assist.git",
@@ -50,6 +50,32 @@
             "type": "string",
             "default": "0",
             "description": "LLM temperature"
+          },
+          "genai.assistant.timeout": {
+            "type": "string",
+            "default": "10",
+            "description": "LLM api timeout"
+          }
+        }
+      },
+      {
+        "type": "object",
+        "title": "Default Comment Configuration",
+        "properties": {
+          "genai.assistant.comment.singleLine": {
+            "type": "string",
+            "default": "//",
+            "description": "Single lime comment format"
+          },
+          "genai.assistant.comment.multiLineStart": {
+            "type": "string",
+            "default": "/*",
+            "description": "Multi line start format for comment"
+          },
+          "genai.assistant.comment.multiLineEnd": {
+            "type": "string",
+            "default": "*/",
+            "description": "Multi line end format for comment"
           }
         }
       },

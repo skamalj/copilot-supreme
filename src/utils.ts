@@ -1,54 +1,54 @@
-// languageUtils.ts
-
 import * as vscode from 'vscode';
 
-/**
- * Function to identify if the current file's language is supported.
- * @param editor - The VSCode editor object.
- * @returns {string | null} - Returns the language ID if supported, otherwise null.
- */
-export function identifyProgrammingLanguage(editor: vscode.TextEditor): string | null {
-    const supportedLanguages = ['javascript', 'typescript', 'python', 'java', 'rust'];
-    const languageId = editor.document.languageId; // Get the programming language from the document
-
-    // Check if the language is supported
-    if (supportedLanguages.includes(languageId)) {
+export function identifyProgrammingLanguage(editor: vscode.TextEditor): string | null { 
+    const languageId = editor.document.languageId; 
+    if (languageId) {
         return languageId;
     }
-
-    return null; // Return null if the language is not supported
+    return null;
 }
 
-// utils.js
 export function getCommentPatterns(languageId) {
-    const commentPatterns = {
-        javascript: {
-            singleLine: '//',
-            multiLineStart: '/*',
-            multiLineEnd: '*/',
-            multiLineTrigger: '@! */'
-        },
-        typescript: {
-            singleLine: '//',
-            multiLineStart: '/*',
-            multiLineEnd: '*/',
-            multiLineTrigger: '@! */'
-        },
-        python: {
-            singleLine: '#',
-            multiLineStart: "'''",
-            multiLineEnd: "'''",
-            multiLineTrigger: "@! '''"
-        },
-        java: {
-            singleLine: '//',
-            multiLineStart: '/*',
-            multiLineEnd: '*/',
-            multiLineTrigger: '@! */'
-        },
-    };
+    let commentPatterns = {};
 
-    return commentPatterns[languageId] || null;
+    // Use a case statement to handle languages with similar comment patterns
+    switch (languageId) {
+        case 'javascript':
+        case 'typescript':
+        case 'java':
+        case 'rust': 
+        case 'csharp':
+            commentPatterns = {
+                singleLine: '//',
+                multiLineStart: '/*',
+                multiLineEnd: '*/',
+                multiLineTrigger: '@! */', 
+            };
+            break;
+
+        case 'python':
+            commentPatterns = {
+                singleLine: '#',
+                multiLineStart: "'''",
+                multiLineEnd: "'''",
+                multiLineTrigger: "@! '''", 
+            };
+            break;
+
+        default:
+            const config = vscode.workspace.getConfiguration('genai.assistant');
+            const multiLineEnd = config.get<string>('comment.multiLineEnd') || '*/';
+
+            commentPatterns = {
+                singleLine: config.get<string>('comment.singleLine') || '//',
+                multiLineStart: config.get<string>('comment.multiLineStart') || '/*',
+                multiLineEnd: multiLineEnd,
+                multiLineTrigger: `@! ${multiLineEnd}`
+            };
+            break;
+    }
+
+    return commentPatterns;
 }
 
 
@@ -73,9 +73,6 @@ export async function collectConsecutiveComments(document: vscode.TextDocument, 
         const commentText = lineText.substring(singleLinePattern.length).trim();
         question = commentText + ' ' + question;
     }
-
-    vscode.window.showInformationMessage(`Question to ask to LLM:  ${question}`);
-
     // Return the final concatenated question or null if no comments found
     return question ? question.trim() : null;
 }
@@ -102,15 +99,12 @@ export function extractQuestionFromMultiLine(document: vscode.TextDocument, star
             const index = lineText.indexOf(multiLineStart);
             const questionStart = index !== -1 ? lineText.substring(index + multiLineStart.length).trim() : '';
             question += questionStart;
-            vscode.window.showInformationMessage(`Question Start:  ${questionStart} at line ${line}`);
         } else if (line === endLine) {
             const index = lineText.indexOf(multiLineEnd);
             const questionEnd = index !== -1 ? lineText.substring(0, index).trim() : '';
             question += questionEnd;
-            vscode.window.showInformationMessage(`Question Start:  ${questionEnd} at line ${line}`);
         } else {
             question += lineText.trim() + ' '; // Append subsequent lines
-            vscode.window.showInformationMessage(`Question append:  ${lineText.trim()} at line ${line}`);
         }
     }
     vscode.window.showInformationMessage(`Question to ask to LLM:  ${question}`);

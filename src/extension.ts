@@ -86,8 +86,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function fetchCompletion(document: vscode.TextDocument, contextText: string, question: string, position: vscode.Position, localModel?: any) {
-    const config = vscode.workspace.getConfiguration('genai.assistant');
-
+    
     try {
         // Use the new function to process included files and get the cleaned question
         const { includedFilesContent, cleanedQuestion } = await processIncludedFiles(question);
@@ -103,7 +102,7 @@ async function fetchCompletion(document: vscode.TextDocument, contextText: strin
                             Your task is to:
                               - Detect the programming language from the file extension.
                               - Please provide only the necessary code needed to address the user's request.
-                              - Code must not be commented out.
+                              - Return only the clean, executable code without any comments or code wrapped in quoted strings (e.g., ''' or """). Avoid returning code as part of any string representations
                               - Must NOT include any comments, explanations, or non-executable text.
                               - If the requested code can be directly inferred from the question, generate the relevant code only.`
             },
