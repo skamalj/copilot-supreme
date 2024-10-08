@@ -54,7 +54,7 @@ export function getModelHandle(providerOverride?: string, modelNameOverride?: st
         vscode.window.showInformationMessage(`Creating model for provider ${provider}`);
         const openaiConfig: OpenAIModelConfig = {
           temperature,
-          openAIApiKey: config.get<string>('openai.apiKey').trim() || '',
+          openAIApiKey: process.env.OPENAI_API_KEY?.trim() || config.get<string>('openai.apiKey').trim() || '',
           modelName: modelNameOverride || config.get<string>('openai.modelName').trim(),
         };
         return new ChatOpenAI(openaiConfig);
@@ -63,7 +63,7 @@ export function getModelHandle(providerOverride?: string, modelNameOverride?: st
         vscode.window.showInformationMessage(`Creating model for provider ${provider}`);
         const azureConfig: AzureModelConfig = {
           temperature,
-          azureOpenAIApiKey: config.get<string>('azure.apiKey').trim() || '',
+          azureOpenAIApiKey: process.env.AZURE_API_KEY?.trim() || config.get<string>('azure.apiKey').trim() || '',
           azureOpenAIApiDeploymentName: config.get<string>('azure.deployment').trim() || '',
           azureOpenAIEndpoint: config.get<string>('azure.endpoint').trim() || '',
           azureOpenAIApiVersion: config.get<string>('azure.version').trim(),
@@ -86,7 +86,7 @@ export function getModelHandle(providerOverride?: string, modelNameOverride?: st
         const googleConfig: GoogleModelConfig = {
           temperature,
           model: modelNameOverride || config.get<string>('google.modelName').trim(),
-          apiKey: config.get<string>('google.apiKey').trim() || '',
+          apiKey: process.env.GOOGLE_GENAI_API_KEY?.trim() || config.get<string>('google.apiKey').trim() || '',
         };
         return new ChatGoogleGenerativeAI(googleConfig);
       }
@@ -94,7 +94,7 @@ export function getModelHandle(providerOverride?: string, modelNameOverride?: st
         vscode.window.showInformationMessage(`Creating model for provider ${provider}`);
         const anthropicConfig: AnthropicModelConfig = {
           temperature,
-          apiKey: config.get<string>('anthropic.apiKey').trim() || '',
+          apiKey: process.env.ANTHROPIC_API_KEY?.trim() ||  config.get<string>('anthropic.apiKey').trim() || '',
           model: modelNameOverride || config.get<string>('anthropic.modelName').trim(),
         };
         return new ChatAnthropic(anthropicConfig);

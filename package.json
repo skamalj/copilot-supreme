@@ -12,22 +12,12 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "extension.activateLLMCompletion",
-        "title": "GenAI Assist: Activate"
-      }
-    ],
+    "commands": [],
     "menus": {
-      "editor/context": [
-        {
-          "command": "extension.activateLLMCompletion",
-          "when": "editorTextFocus"
-        }
-      ]
+      "editor/context": []
     },
     "configuration": [
       {
@@ -60,38 +50,17 @@
       },
       {
         "type": "object",
-        "title": "Default Comment Configuration",
-        "properties": {
-          "genai.assistant.comment.singleLine": {
-            "type": "string",
-            "default": "//",
-            "description": "Single lime comment format"
-          },
-          "genai.assistant.comment.multiLineStart": {
-            "type": "string",
-            "default": "/*",
-            "description": "Multi line start format for comment"
-          },
-          "genai.assistant.comment.multiLineEnd": {
-            "type": "string",
-            "default": "*/",
-            "description": "Multi line end format for comment"
-          }
-        }
-      },
-      {
-        "type": "object",
         "title": "OpenAI",
         "properties": {
           "genai.assistant.openai.apiKey": {
             "type": "string",
             "default": "",
-            "description": "Your API Key"
+            "description": "Your API Key or set environment variable OPENAI_API_KEY"
           },
           "genai.assistant.openai.modelName": {
             "type": "string",
-            "default": "gpt-3.5-turbo",
-            "description": "The LLM  model name (e.g., gpt-3.5-turbo)"
+            "default": "gpt-4",
+            "description": "The LLM  model name (e.g., gpt-4)"
           }
         }
       },
@@ -115,7 +84,7 @@
           "genai.assistant.azure.apiKey": {
             "type": "string",
             "default": "",
-            "description": "Your API Key"
+            "description": "Your API Key or set environment variable AZURE_API_KEY"
           },
           "genai.assistant.azure.modelName": {
             "type": "string",
@@ -152,7 +121,7 @@
           "genai.assistant.google.apiKey": {
             "type": "string",
             "default": "",
-            "description": "Google AIStudio Key"
+            "description": "Google AIStudio Key or set environment variable GOOGLE_GENAI_API_KEY"
           },
           "genai.assistant.google.modelName": {
             "type": "string",
@@ -168,12 +137,33 @@
           "genai.assistant.anthropic.apiKey": {
             "type": "string",
             "default": "",
-            "description": "Your API Key"
+            "description": "Your API Key or set environment variable ANTHROPIC_API_KEY"
           },
           "genai.assistant.anthropic.modelName": {
             "type": "string",
             "default": "claude-3-5-sonnet-20240620",
             "description": "The LLM  model name (e.g., claude-3-5-sonnet-20240620)"
+          }
+        }
+      },
+      {
+        "type": "object",
+        "title": "Comment configuration used by languages other than js, ts, java, rust, csharp, python",
+        "properties": {
+          "genai.assistant.comment.singleLine": {
+            "type": "string",
+            "default": "//",
+            "description": "Single lime comment format"
+          },
+          "genai.assistant.comment.multiLineStart": {
+            "type": "string",
+            "default": "/*",
+            "description": "Multi line start format for comment"
+          },
+          "genai.assistant.comment.multiLineEnd": {
+            "type": "string",
+            "default": "*/",
+            "description": "Multi line end format for comment"
           }
         }
       }

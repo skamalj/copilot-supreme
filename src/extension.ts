@@ -4,39 +4,30 @@ import { processIncludedFiles, getCommentPatterns, identifyProgrammingLanguage, 
 
 // Global LLM model instance
 let llmModel;
-const contexts = new Map(); // To store context for each document
 
 export function activate(context: vscode.ExtensionContext) {
-    let enableCommand = vscode.commands.registerCommand('extension.activateLLMCompletion', async () => {
+
+    // Listener for document changes
+    vscode.workspace.onDidChangeTextDocument(async (event) => {
         const editor = vscode.window.activeTextEditor;
+        const document = event.document;
+        const changes = event.contentChanges;
+
+        let patterns: any;
         if (editor) {
             const languageId = identifyProgrammingLanguage(editor);
 
             if (!languageId) {
-                vscode.window.showErrorMessage(`Unsupported programming language: ${editor.document.languageId}`);
+                vscode.window.showErrorMessage(`Unsupported programming language or extension`);
                 return;
             }
-            const patterns = getCommentPatterns(languageId);
-            llmModel = getModelHandle();
-            // Set the context for the current document
-            contexts.set(editor.document.uri.toString(), {
-                patterns: patterns
-            });
+            patterns = getCommentPatterns(languageId);
+
+            if (!llmModel) {
+                llmModel = getModelHandle();
+            }
         }
-    });
 
-    context.subscriptions.push(enableCommand);
-
-    // Listener for document changes
-    vscode.workspace.onDidChangeTextDocument(async (event) => {
-        const document = event.document;
-        const changes = event.contentChanges;
-
-        const contextData = contexts.get(document.uri.toString());
-        if (!contextData) {
-            return; // No context available for the current document
-        }
-        const patterns = contextData.patterns;
 
         if (changes.length === 0) { return; }
 
@@ -51,7 +42,6 @@ export function activate(context: vscode.ExtensionContext) {
                 .replace(/provider=([^\s]+)/, '')
                 .replace(/model=([^\s]+)/, '')
                 .trim();
-
             let modelHandle;
             if (provider || modelName) {
                 modelHandle = getModelHandle(provider, modelName);
@@ -71,7 +61,6 @@ export function activate(context: vscode.ExtensionContext) {
                         .replace(/provider=([^\s]+)/, '')
                         .replace(/model=([^\s]+)/, '')
                         .trim();
-
                     let modelHandle;
                     if (provider || modelName) {
                         modelHandle = getModelHandle(provider, modelName);
@@ -83,10 +72,11 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }
     });
+    vscode.window.showInformationMessage('Copilot Supreme Activated');
 }
 
 async function fetchCompletion(document: vscode.TextDocument, contextText: string, question: string, position: vscode.Position, localModel?: any) {
-    
+
     try {
         // Use the new function to process included files and get the cleaned question
         const { includedFilesContent, cleanedQuestion } = await processIncludedFiles(question);
@@ -102,9 +92,9 @@ async function fetchCompletion(document: vscode.TextDocument, contextText: strin
                             Your task is to:
                               - Detect the programming language from the file extension.
                               - Please provide only the necessary code needed to address the user's request.
-                              - Return only the clean, executable code without any comments or code wrapped in quoted strings (e.g., ''' or """). Avoid returning code as part of any string representations
-                              - Must NOT include any comments, explanations, or non-executable text.
-                              - If the requested code can be directly inferred from the question, generate the relevant code only.`
+                              - Return only the clean, executable code without any comments. 
+                              - Avoid returning code as part of any string representations.
+                              - Must NOT include any comments, explanations, markdown or non-executable text.`
             },
             {
                 "role": "user",

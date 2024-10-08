@@ -107,7 +107,6 @@ export function extractQuestionFromMultiLine(document: vscode.TextDocument, star
             question += lineText.trim() + ' '; // Append subsequent lines
         }
     }
-    vscode.window.showInformationMessage(`Question to ask to LLM:  ${question}`);
     return question ? question.trim() : null; // Return the full question
 }
 
