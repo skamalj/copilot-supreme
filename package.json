@@ -2,7 +2,7 @@
   "name": "copilot-supreme",
   "displayName": "Copilot Supreme",
   "description": "Multi model GenAI based coding assistant",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "skamalj",
   "icon": "images/icon.jpg",
   "repository": "https://github.com/skamalj/genai-code-assist.git",
