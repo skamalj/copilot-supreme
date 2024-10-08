@@ -1,7 +1,7 @@
 {
   "name": "copilot-supreme",
   "displayName": "Copilot Supreme",
-  "description": "Multi model GenAI based coding assistant",
+  "description": "Code Copilot which allows you to choose your LLM across multiple providers",
   "version": "0.0.2",
   "publisher": "skamalj",
   "icon": "images/icon.jpg",
