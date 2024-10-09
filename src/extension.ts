@@ -7,6 +7,12 @@ let llmModel;
 
 export function activate(context: vscode.ExtensionContext) {
 
+    // Register the "Copilot Supreme: Activate" command
+    let activateCommand = vscode.commands.registerCommand('copilotSupreme.activate', function () {
+        vscode.window.showInformationMessage('Copilot Supreme Activated!');
+    });
+    context.subscriptions.push(activateCommand);
+    
     // Listener for document changes
     vscode.workspace.onDidChangeTextDocument(async (event) => {
         const editor = vscode.window.activeTextEditor;

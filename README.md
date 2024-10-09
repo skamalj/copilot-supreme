@@ -26,7 +26,14 @@ This extension supports multiple AI providers. Configure settings to specify def
 
 ## Usage
 
-1. **Add Comments:**
+1. **Activate the Extension:**
+   - After installing the extension, you can activate it manually by running the command:
+     ```
+     Copilot Supreme: Activate
+     ```
+     You can access this command either from the command palette (`Ctrl+Shift+P`) or by right-clicking inside the editor window and selecting **"Copilot Supreme: Activate"** from the context menu.
+
+2. **Add Comments:**
    - For single-line comments: Use the format `// @! Your question` (or any single-line comment format specific to your programming language).
    - For multi-line comments: Use the format (or `'''` for Python):
      ```javascript
@@ -35,19 +42,19 @@ This extension supports multiple AI providers. Configure settings to specify def
        @! */
      ```
 
-2. **Include External Files in AI Query (New Feature):**
+3. **Include External Files in AI Query (New Feature):**
    - You can now reference and include content from other files in your AI query by using the `include=<file>` directive. This is particularly useful when you want the AI to consider code from multiple files, such as including the definition of functions or creating test cases based on file contents.
      ```javascript
      // @! Write test cases for this function include=utils.js
      ```
 
-3. **AI Interaction:**
+4. **AI Interaction:**
    - The extension captures the question, appends the code prior to the comment as context, and retrieves a code suggestion from the AI model.
 
-4. **Updating Suggestions:**
+5. **Updating Suggestions:**
    - After modifying a comment, press Enter at the last line to request a new code suggestion.
 
-5. **Customizing Provider and Model:**
+6. **Customizing Provider and Model:**
    - Override the default AI provider and model by specifying them in your comment, like so:
      ```javascript
      // @! Your question provider=yourProvider model=yourModel
