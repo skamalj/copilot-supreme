@@ -21,7 +21,7 @@ This VSCode extension provides AI-assisted code suggestions based on user commen
      ```
      You can access this command either from the command palette (`Ctrl+Shift+P`) or by right-clicking inside the editor window and selecting **"Copilot Supreme: Activate"** from the context menu.
 
-2. **Add Comments:**
+2. **Code Generation:**
    - For single-line comments: Use the format `// @! Your question` (or any single-line comment format specific to your programming language).
    - For multi-line comments: Use the format (or `'''` for Python):
      ```javascript
@@ -32,18 +32,21 @@ This VSCode extension provides AI-assisted code suggestions based on user commen
    - Extension understands comment format for - js, ts, java, csharp, python and rust. For other languages it uses default of "//" for singleline and /* */ for multiline. These can be overriden in settings
 
 3. **Include External Files in AI Query (New Feature):**
-   - You can now reference and include content from other files in your AI query by using the `include=<file>` directive. This is particularly useful when you want the AI to consider code from multiple files, such as including the definition of functions or creating test cases based on file contents.
+   - You can now reference and include content from other files in your AI query by using the `include=<file>` directive. This is particularly useful when you want the AI to consider code from multiple files, such as including the definition of functions or creating __test cases__ or __Readme__ based on file contents.
      ```javascript
      // @! Write test cases for this function include=utils.js
      ```
+4. **Explain Code:**
+   - Select the code and run __explain code__ command from context menu. Explanation is shopwn in side wondow. This uses default provider configured for extension.
 
-4. **AI Interaction:**
+
+5. **AI Interaction:**
    - The extension captures the question, appends the code prior to the comment as context, and retrieves a code suggestion from the AI model.
 
-5. **Updating Suggestions:**
+6. **Updating Suggestions:**
    - After modifying a comment, press Enter at the last line to request a new code suggestion.
 
-6. **Customizing Provider and Model:**
+7. **Customizing Provider and Model:**
    - Override the default AI provider and model by specifying them in your comment, like so:
      ```javascript
      // @! Your question provider=yourProvider model=yourModel
