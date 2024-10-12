@@ -2,32 +2,20 @@
 
 This VSCode extension provides AI-assisted code suggestions based on user comments in supported programming languages.
 
-Two reasons why this is created:
-- This provides a pay-as-you-go option, rather than monthly payments for various copilots.
-- You have flexibility to use any chat model from any provider — supports 5 providers as of today.
-
 ## Features
 
+- **You Choose LLM Model:** You have flexibility to use any chat model from any provider — supports 5 providers as of today - OpenAI, AWS Bedrock, Google GenAI, Azure , Anthropic.
 - **Language Support:** Any language you can use in VSCode.
 - **AI Suggestions:** Fetches code suggestions based on user-defined questions in comments.
 - **Multi-line Comment Handling:** Supports multi-line comments with customizable start and end tokens.
-- **Dynamic Suggestions:** If a user modifies a comment, they can navigate to the last line of the comment and press Enter to fetch updated code suggestions.
 - **Provider and Model Overriding:** Users can specify a different AI provider or model by including `provider=` and `model=` in their comments.
-- **Include File Content in Queries:** Users can reference and include code from external files in their AI queries, useful for test cases or including function definitions.
-
-## Supported AI Providers
-
-This extension supports multiple AI providers. Configure settings to specify default models and authentication:
-- OpenAI
-- AWS (Bedrock)
-- Azure
-- Google GenAI (Vertex not supported yet)
-- Anthropic
+- **Include File Content in Queries:** Users can reference and include content from other files in their queries, useful for test cases creation ot code conversion or creating Readme -- See Ex. below.
+- **Bonus** This provides a pay-as-you-go option, rather than monthly payments for various copilots.
 
 ## Usage
 
 1. **Activate the Extension:**
-   - After installing the extension, you can activate it manually by running the command:
+   - After installing the extension, you can activate it manually by running the command (Optional, this is place holder for future):
      ```
      Copilot Supreme: Activate
      ```
@@ -41,6 +29,7 @@ This extension supports multiple AI providers. Configure settings to specify def
        Your question 
        @! */
      ```
+   - Extension understands comment format for - js, ts, java, csharp, python and rust. For other languages it uses default of "//" for singleline and /* */ for multiline. These can be overriden in settings
 
 3. **Include External Files in AI Query (New Feature):**
    - You can now reference and include content from other files in your AI query by using the `include=<file>` directive. This is particularly useful when you want the AI to consider code from multiple files, such as including the definition of functions or creating test cases based on file contents.

@@ -77,14 +77,32 @@ export async function collectConsecutiveComments(document: vscode.TextDocument, 
     return question ? question.trim() : null;
 }
 
-export function extractProviderAndModel(comment: string): { provider?: string; modelName?: string } {
-    const providerMatch = comment.match(/provider=([^\s]+)/);
-    const modelNameMatch = comment.match(/model=([^\s]+)/);
-    
-    const provider = providerMatch ? providerMatch[1] : undefined;
-    const modelName = modelNameMatch ? modelNameMatch[1] : undefined;
-    
-    return { provider, modelName };
+// Create a version of function xtractKeyValuePairsAndCleanComment, with same name to  handle keyvalue where same key is repeated
+// .In that case return all values in array for that key 
+// @! provider=anthropic
+
+export function extractKeyValuePairsAndCleanComment(comment: string): { keyValuePairs: { [key: string]: string | string[] }, cleanedComment: string } {
+    const keyValuePairs: { [key: string]: string | string[] } = {};
+    const matches = comment.match(/(\w+)=([^\s]+)/g);
+    let cleanedComment = comment;
+
+    if (matches) {
+        for (const match of matches) {
+            const [key, value] = match.split('=');
+            if (key in keyValuePairs) {
+                if (Array.isArray(keyValuePairs[key])) {
+                    (keyValuePairs[key] as string[]).push(value);
+                } else {
+                    keyValuePairs[key] = [keyValuePairs[key] as string, value];
+                }
+            } else {
+                keyValuePairs[key] = value;
+            }
+            cleanedComment = cleanedComment.replace(match, '').trim();
+        }
+    }
+
+    return { keyValuePairs, cleanedComment };
 }
 
 export function extractQuestionFromMultiLine(document: vscode.TextDocument, startLine: number, endLine: number, multiLineStart: string, multiLineEnd: string): string | null {
@@ -139,17 +157,16 @@ export async function findStartOfMultiLineComment(document: vscode.TextDocument,
 /**
  * Function to process the `include-<file>` directives in the question and fetch their content.
  * @param {string} question - The user's question containing the `include-<file>` directives.
- * @returns {Promise<{includedFilesContent: string, cleanedQuestion: string}>} - An object containing concatenated included file contents and the cleaned question.
+ * @returns {Promise<string>} - An object containing concatenated included file contents and the cleaned question.
  */
-export  async function processIncludedFiles(question: string): Promise<{includedFilesContent: string, cleanedQuestion: string}> {
-    const includeFileMatches = [...question.matchAll(/include=([^\s]+)/g)];
+export  async function processIncludedFiles(includedFiles: string[]): Promise<string> {
+    
     let includedFilesContent = '';
-    let cleanedQuestion = question;
 
     // If there are include patterns, fetch each file's content
-    if (includeFileMatches.length > 0) {
-        for (const match of includeFileMatches) {
-            const fileName = match[1].trim();
+    if (includedFiles.length > 0) {
+        for (const file of includedFiles) {
+            const fileName = file.trim();
             const fileContent = await getFileContent(fileName);
 
             if (!fileContent) {
@@ -160,12 +177,10 @@ export  async function processIncludedFiles(question: string): Promise<{included
             // Append file content under a "Filename" heading
             includedFilesContent += `\nFilename: ${fileName}\n${fileContent}\n`;
 
-            // Remove the include directive from the question text
-            cleanedQuestion = cleanedQuestion.replace(match[0], '').trim();
         }
     }
 
-    return { includedFilesContent, cleanedQuestion };
+    return includedFilesContent;
 }
 
 /**
