@@ -105,7 +105,8 @@ async function fetchCompletion(document: vscode.TextDocument, contextText: strin
         cancellable: false
     }, async (progress) => {
         try {
-            const includedFilesContent = await processIncludedFiles(includes);
+            const includesArray: string[] = typeof includes === 'string' ? [includes] : includes;
+            const includedFilesContent = await processIncludedFiles(includesArray);
             const messages = [
                 {
                     "role": "system",
@@ -123,7 +124,7 @@ async function fetchCompletion(document: vscode.TextDocument, contextText: strin
                                 - Detect the programming language from the file extension.
                                 - Return only the necessary code to address the user's request.
                                 - Return clean, executable code without comments, explanations, markdown, or any non-executable text.
-                                - Avoid returning code as part of string representations.`
+                                - Returned code MUST NOT be part of string representations.`
                 },
                 {
                     "role": "user",
